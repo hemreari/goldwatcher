@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type DbStruct struct {
+type DbClient struct {
 	Db *gorm.DB
 }
 
-func NewDbStruct(conf *Config) *DbStruct {
+func NewDbClient(conf *Config) *DbClient {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  getDbDSNString(conf),
 		PreferSimpleProtocol: true, // disables implicit prepared statement usage
@@ -22,7 +22,7 @@ func NewDbStruct(conf *Config) *DbStruct {
 	}
 
 	db.AutoMigrate(&Price{})
-	return &DbStruct{Db: db}
+	return &DbClient{Db: db}
 }
 
 func getDbDSNString(conf *Config) string {

@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func readConfig() *Config {
@@ -32,10 +34,20 @@ func readConfig() *Config {
 
 func main() {
 	cfg := readConfig()
-	db := NewDbStruct(cfg)
+	dbClient := NewDbClient(cfg)
 
-	NewTgStruct(cfg)
+	tgClient := NewTgStruct(cfg)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+	updates := tgClient.Bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.Message != nil { // If we got a message
+			tgClient.NewMessageReceived(update)
+		}
+	}
 
 	price := GetPrices()
-	db.InsertNewPrice(&price)
+	dbClient.InsertNewPrice(&price)
 }

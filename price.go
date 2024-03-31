@@ -17,7 +17,7 @@ type Price struct {
 	Iab_kapanis  int
 }
 
-func (d *DbStruct) InsertNewPrice(price *Price) {
+func (d *DbClient) InsertNewPrice(price *Price) {
 	result := d.Db.Create(price)
 	err := result.Error
 	if err != nil {
@@ -26,4 +26,8 @@ func (d *DbStruct) InsertNewPrice(price *Price) {
 
 	rowsAffected := result.RowsAffected
 	log.Print(rowsAffected)
+}
+
+func (d *DbClient) GetLatestPrice() *Price {
+	return nil
 }
