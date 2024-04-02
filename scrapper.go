@@ -24,7 +24,7 @@ func GetPrices() Price {
 			priceInt, _ := strconv.Atoi(priceStr)
 			switch name {
 			case "22 Ayar Altın":
-				price.Ayar22_altin = priceInt
+				price.Ayar22Altin = priceInt
 			case "Çeyrek Ziynet":
 				price.Ceyrek = priceInt
 			case "Yarım Ziynet":
@@ -34,7 +34,7 @@ func GetPrices() Price {
 			case "Cumhuriyet":
 				price.Cumhuriyet = priceInt
 			case "IAB Kapanış":
-				price.Iab_kapanis = priceInt
+				price.IabKapanis = priceInt
 			default:
 				log.Errorf("'%s' name not recognized.", name)
 			}

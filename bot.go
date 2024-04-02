@@ -9,9 +9,10 @@ import (
 
 type TgClient struct {
 	Bot *tgbotapi.BotAPI
+	DB  *DbClient
 }
 
-func NewTgStruct(cfg *Config) *TgClient {
+func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
 	bot, err := tgbotapi.NewBotAPI(cfg.Tg.Token)
 	if err != nil {
 		log.Panic(err)
@@ -19,7 +20,7 @@ func NewTgStruct(cfg *Config) *TgClient {
 	bot.Debug = cfg.Tg.Debug
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	return &TgClient{Bot: bot}
+	return &TgClient{Bot: bot, DB: dbClient}
 }
 
 func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
@@ -35,9 +36,10 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 
 	// Create a new MessageConfig. We don't have text yet,
 	// so we leave it empty.
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 
+	var msg tgbotapi.MessageConfig
 	// Extract the command from the Message.
+
 	switch update.Message.Command() {
 	case "help":
 		msg.Text = "I understand /sayhi and /status."
@@ -46,7 +48,7 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 	case "status":
 		msg.Text = "I'm ok."
 	case "anlik":
-		msg.Text = GetPriceMsg()
+		msg = t.handleCurrentPricesCmd(update.Message.Chat.ID)
 	default:
 		msg.Text = "I don't know that command"
 	}
@@ -65,9 +67,18 @@ Cumhuriyet:		18002
 IAB Kapanis:	2446
 */
 
-func GetPriceMsg() string {
+func (t *TgClient) handleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(chatId, "")
 	price := GetPrices()
+
+	t.DB.InsertNewPrice(&price)
+
+	msg.Text = getPriceMsg(price)
+	return msg
+}
+
+func getPriceMsg(price Price) string {
 	return fmt.Sprintf("22 Ayar Altin:\t\t\t%d\nCeyrek:\t\t\t%d\nYarim:\t\t\t%d\nTam:\t\t\t%d\nCumhuriyet:\t\t%d\n IAB Kapanis:\t%d",
-		price.Ayar22_altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.Iab_kapanis,
+		price.Ayar22Altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.IabKapanis,
 	)
 }

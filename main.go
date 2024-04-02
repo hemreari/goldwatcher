@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -33,21 +37,30 @@ func readConfig() *Config {
 }
 
 func main() {
+	ctx := context.Background()
 	cfg := readConfig()
-	dbClient := NewDbClient(cfg)
+	dbClient := NewDbClient(ctx, cfg)
 
-	tgClient := NewTgStruct(cfg)
+	tgClient := NewTgClient(cfg, dbClient)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := tgClient.Bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message != nil { // If we got a message
+		if update.Message != nil {
 			tgClient.NewMessageReceived(update)
 		}
 	}
 
-	price := GetPrices()
-	dbClient.InsertNewPrice(&price)
+	gracefulShutdown := make(chan os.Signal, 1)
+	signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
+	<-gracefulShutdown
+	shutdown(ctx, dbClient)
+	fmt.Println("Done!")
+}
+
+func shutdown(ctx context.Context, dbClient *DbClient) {
+	log.Print("shutting down the application...")
+	dbClient.Db.Close(ctx)
 }
