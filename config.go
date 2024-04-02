@@ -1,8 +1,9 @@
 package main
 
 type Config struct {
-	Tg TgConf `json:"telegram"`
-	Db DbConf `json:"db"`
+	Tg  TgConf  `json:"telegram"`
+	Db  DbConf  `json:"db"`
+	App AppConf `json:"app"`
 }
 
 type DbConf struct {
@@ -16,4 +17,8 @@ type DbConf struct {
 type TgConf struct {
 	Token string `json:"token"`
 	Debug bool   `json:"debug"`
+}
+
+type AppConf struct {
+	ExpirationMin int `json:"expirationMin"`
 }

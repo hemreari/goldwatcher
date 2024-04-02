@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,11 +32,11 @@ type Price struct {
 	IabKapanis  int
 }
 
-func (d *DbClient) InsertNewPrice(price *Price) {
+func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	query := fmt.Sprintf("INSERT INTO prices (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		LastAtColName, Ayar22AltinColName, CeyrekColName, YarimColName, TamColName, CumhuriyetColName, IabKapanisColName)
 
-	cmdTag, err := d.Db.Exec(context.Background(),
+	cmdTag, err := d.Db.Exec(ctx,
 		query, time.Now(), price.Ayar22Altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.IabKapanis)
 	if err != nil {
 		log.Errorf("error while inserting new price record: %v", err)
@@ -44,6 +45,26 @@ func (d *DbClient) InsertNewPrice(price *Price) {
 	log.Printf("cmd status: %v", cmdTag)
 }
 
-func (d *DbClient) GetLatestPrice() *Price {
-	return nil
+func (d *DbClient) GetLatestPrice(ctx context.Context, expirationMin int) *Price {
+	now := time.Now()
+	then := now.Add(time.Duration(-expirationMin) * time.Minute)
+	log.Printf("then: %v", then)
+	query := "SELECT * FROM prices WHERE last_at > $1 ORDER BY last_at DESC"
+
+	var err error
+	rows, err := d.Db.Query(ctx, query, then)
+	if err != nil {
+		log.Errorf("error while getting latest price: %v", err)
+		return nil
+	}
+	price, err := pgx.CollectOneRow[Price](rows, pgx.RowToStructByName[Price])
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			log.Warnf("couldn't find any record newer than %d mins.", expirationMin)
+			return nil
+		}
+		log.Errorf("error while getting latest price: %v", err)
+	}
+
+	return &price
 }

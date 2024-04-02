@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func GetPrices() Price {
+func GetPrices() *Price {
 	price := Price{}
 
 	c := colly.NewCollector()
@@ -48,5 +48,5 @@ func GetPrices() Price {
 
 	c.Visit("http://akod.org.tr")
 
-	return price
+	return &price
 }

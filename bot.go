@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -8,8 +9,9 @@ import (
 )
 
 type TgClient struct {
-	Bot *tgbotapi.BotAPI
-	DB  *DbClient
+	Conf *Config
+	Bot  *tgbotapi.BotAPI
+	DB   *DbClient
 }
 
 func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
@@ -20,7 +22,7 @@ func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
 	bot.Debug = cfg.Tg.Debug
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	return &TgClient{Bot: bot, DB: dbClient}
+	return &TgClient{Bot: bot, DB: dbClient, Conf: cfg}
 }
 
 func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
@@ -68,16 +70,21 @@ IAB Kapanis:	2446
 */
 
 func (t *TgClient) handleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
+	ctx := context.Background()
 	msg := tgbotapi.NewMessage(chatId, "")
-	price := GetPrices()
 
-	t.DB.InsertNewPrice(&price)
+	var price *Price
+	price = t.DB.GetLatestPrice(ctx, t.Conf.App.ExpirationMin)
+	if price == nil {
+		price = GetPrices()
+		t.DB.InsertNewPrice(ctx, price)
+	}
 
 	msg.Text = getPriceMsg(price)
 	return msg
 }
 
-func getPriceMsg(price Price) string {
+func getPriceMsg(price *Price) string {
 	return fmt.Sprintf("22 Ayar Altin:\t\t\t%d\nCeyrek:\t\t\t%d\nYarim:\t\t\t%d\nTam:\t\t\t%d\nCumhuriyet:\t\t%d\n IAB Kapanis:\t%d",
 		price.Ayar22Altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.IabKapanis,
 	)
