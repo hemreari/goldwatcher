@@ -38,7 +38,6 @@ func GetPrices() *Price {
 			default:
 				log.Errorf("'%s' name not recognized.", name)
 			}
-			log.Print(priceInt)
 		})
 	})
 

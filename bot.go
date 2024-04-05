@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	log "github.com/sirupsen/logrus"
 )
 
 type TgClient struct {
@@ -20,7 +20,7 @@ func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
 		log.Panic(err)
 	}
 	bot.Debug = cfg.Tg.Debug
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("authorized on account %s", bot.Self.UserName)
 
 	return &TgClient{Bot: bot, DB: dbClient, Conf: cfg}
 }
@@ -36,11 +36,7 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 		return
 	}
 
-	// Create a new MessageConfig. We don't have text yet,
-	// so we leave it empty.
-
 	var msg tgbotapi.MessageConfig
-	// Extract the command from the Message.
 
 	switch update.Message.Command() {
 	case "help":
@@ -59,15 +55,6 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 		log.Panic(err)
 	}
 }
-
-/*
-22 Ayar Altin: 	2396
-Ceyrek:			4420
-Yarim:			8840
-Tam:			17680
-Cumhuriyet:		18002
-IAB Kapanis:	2446
-*/
 
 func (t *TgClient) handleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
 	ctx := context.Background()

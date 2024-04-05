@@ -2,44 +2,71 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
+	"strconv"
 	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	log "github.com/sirupsen/logrus"
 )
 
-func readConfig() *Config {
-	cfg := &Config{}
+func readConfig() (*Config, error) {
+	// cfg := &Config{}
 
-	configFileName := "config.json"
-	if len(os.Args) > 1 {
-		configFileName = os.Args[1]
-	}
-	configFileName, _ = filepath.Abs(configFileName)
-	log.Printf("Loading config: %v", configFileName)
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	configFile, err := os.Open(configFileName)
+	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
-		log.Fatal("File error: ", err.Error())
-	}
-	defer configFile.Close()
-	jsonParser := json.NewDecoder(configFile)
-	if err := jsonParser.Decode(cfg); err != nil {
-		log.Fatal("Config error: ", err.Error())
+		return nil, fmt.Errorf("couldn't convert the DB_PORT env variable to int: %v", err)
 	}
 
-	return cfg
+	tgDebug, err := strconv.ParseBool(os.Getenv("TG_DEBUG"))
+	if err != nil {
+		log.Errorf("couldn't convert the TG_DEBUG env variable to bool: %v", err)
+		tgDebug = false
+	}
+
+	expMin, err := strconv.Atoi(os.Getenv("PRICE_EXPIRATION_MIN"))
+	if err != nil {
+		log.Errorf("couldn't convert the PRICE_EXPIRATION_MIN env variable to int: %v", err)
+		expMin = 5
+	}
+
+	cfg := &Config{
+		Db: DbConf{
+			Host:     os.Getenv("DB_HOST"),
+			User:     os.Getenv("DB_USER"),
+			Password: os.Getenv("DB_PASSWORD"),
+			DbName:   os.Getenv("DB_NAME"),
+			Port:     port,
+		},
+		Tg: TgConf{
+			Token: os.Getenv("TG_TOKEN"),
+			Debug: tgDebug,
+		},
+		App: AppConf{
+			ExpirationMin: expMin,
+		},
+	}
+
+	return cfg, nil
 }
 
 func main() {
 	ctx := context.Background()
-	cfg := readConfig()
-	dbClient := NewDbClient(ctx, cfg)
+	cfg, err := readConfig()
+	if err != nil {
+		log.Fatalf("couldn't read the env variables: %v", err)
+	}
+	dbClient, err := NewDbClient(ctx, cfg)
+	if err != nil {
+		log.Fatalf("couldn't create new db client: %v", err)
+	}
 
 	tgClient := NewTgClient(cfg, dbClient)
 

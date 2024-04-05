@@ -32,6 +32,7 @@ type Price struct {
 	IabKapanis  int
 }
 
+// InsertNewPrice inserts given price information to prices table.
 func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	query := fmt.Sprintf("INSERT INTO prices (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		LastAtColName, Ayar22AltinColName, CeyrekColName, YarimColName, TamColName, CumhuriyetColName, IabKapanisColName)
@@ -45,6 +46,10 @@ func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	log.Printf("cmd status: %v", cmdTag)
 }
 
+// GetLatestPrice returns most recent price record according to threshold given
+// in expirationMin param. If there is not any record in given threshold range
+// returns nil.
+// expirationMin is set in the config file.
 func (d *DbClient) GetLatestPrice(ctx context.Context, expirationMin int) *Price {
 	now := time.Now()
 	then := now.Add(time.Duration(-expirationMin) * time.Minute)

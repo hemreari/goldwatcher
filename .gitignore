@@ -21,3 +21,4 @@
 go.work
 goldwatcher
 config.json
+.env

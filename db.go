@@ -13,8 +13,7 @@ type DbClient struct {
 	Db *pgx.Conn
 }
 
-func NewDbClient(ctx context.Context, conf *Config) *DbClient {
-	// urlExample := "postgres://username:password@localhost:5432/database_name"
+func NewDbClient(ctx context.Context, conf *Config) (*DbClient, error) {
 	dbConnUrl := getDbConnUrl(conf)
 	conn, err := pgx.Connect(ctx, dbConnUrl)
 	if err != nil {
@@ -22,7 +21,14 @@ func NewDbClient(ctx context.Context, conf *Config) *DbClient {
 		os.Exit(1)
 	}
 
-	return &DbClient{Db: conn}
+	err = conn.Ping(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't establish connection to db: %v", err)
+	}
+
+	log.Print("db connection is established.")
+
+	return &DbClient{Db: conn}, nil
 }
 
 func getDbConnUrl(conf *Config) string {
