@@ -9,10 +9,13 @@ import (
 	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/hemreari/goldwatcher/bot"
+	"github.com/hemreari/goldwatcher/config"
+	"github.com/hemreari/goldwatcher/price"
 	log "github.com/sirupsen/logrus"
 )
 
-func readConfig() (*Config, error) {
+func readConfig() (*config.Config, error) {
 	// cfg := &Config{}
 
 	// err := godotenv.Load(".env")
@@ -37,19 +40,19 @@ func readConfig() (*Config, error) {
 		expMin = 5
 	}
 
-	cfg := &Config{
-		Db: DbConf{
+	cfg := &config.Config{
+		Db: config.DbConf{
 			Host:     os.Getenv("DB_HOST"),
 			User:     os.Getenv("DB_USER"),
 			Password: os.Getenv("DB_PASSWORD"),
 			DbName:   os.Getenv("DB_NAME"),
 			Port:     port,
 		},
-		Tg: TgConf{
+		Tg: config.TgConf{
 			Token: os.Getenv("TG_TOKEN"),
 			Debug: tgDebug,
 		},
-		App: AppConf{
+		App: config.AppConf{
 			ExpirationMin: expMin,
 		},
 	}
@@ -63,12 +66,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("couldn't read the env variables: %v", err)
 	}
-	dbClient, err := NewDbClient(ctx, cfg)
+	dbClient, err := price.NewDbClient(ctx, cfg)
 	if err != nil {
 		log.Fatalf("couldn't create new db client: %v", err)
 	}
 
-	tgClient := NewTgClient(cfg, dbClient)
+	tgClient := bot.NewTgClient(cfg, dbClient)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -87,7 +90,7 @@ func main() {
 	fmt.Println("Done!")
 }
 
-func shutdown(ctx context.Context, dbClient *DbClient) {
+func shutdown(ctx context.Context, dbClient *price.DbClient) {
 	log.Print("shutting down the application...")
 	dbClient.Db.Close(ctx)
 }

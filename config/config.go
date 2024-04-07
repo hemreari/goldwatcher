@@ -1,4 +1,4 @@
-package main
+package config
 
 type Config struct {
 	Tg  TgConf  `json:"telegram"`

@@ -1,20 +1,23 @@
-package main
+package bot
 
 import (
 	"context"
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/hemreari/goldwatcher/config"
+	"github.com/hemreari/goldwatcher/price"
+	"github.com/hemreari/goldwatcher/scrapper"
 	log "github.com/sirupsen/logrus"
 )
 
 type TgClient struct {
-	Conf *Config
+	Conf *config.Config
 	Bot  *tgbotapi.BotAPI
-	DB   *DbClient
+	Pm   price.PriceModel
 }
 
-func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
+func NewTgClient(cfg *config.Config, pm price.PriceModel) *TgClient {
 	bot, err := tgbotapi.NewBotAPI(cfg.Tg.Token)
 	if err != nil {
 		log.Panic(err)
@@ -22,7 +25,7 @@ func NewTgClient(cfg *Config, dbClient *DbClient) *TgClient {
 	bot.Debug = cfg.Tg.Debug
 	log.Printf("authorized on account %s", bot.Self.UserName)
 
-	return &TgClient{Bot: bot, DB: dbClient, Conf: cfg}
+	return &TgClient{Bot: bot, Pm: pm, Conf: cfg}
 }
 
 func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
@@ -60,18 +63,18 @@ func (t *TgClient) handleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
 	ctx := context.Background()
 	msg := tgbotapi.NewMessage(chatId, "")
 
-	var price *Price
-	price = t.DB.GetLatestPrice(ctx, t.Conf.App.ExpirationMin)
-	if price == nil {
-		price = GetPrices()
-		t.DB.InsertNewPrice(ctx, price)
+	var pri *price.Price
+	pri = t.Pm.GetLatestPrice(ctx, t.Conf.App.ExpirationMin)
+	if pri == nil {
+		pri = scrapper.GetPrices()
+		t.Pm.InsertNewPrice(ctx, pri)
 	}
 
-	msg.Text = getPriceMsg(price)
+	msg.Text = getPriceMsg(*pri)
 	return msg
 }
 
-func getPriceMsg(price *Price) string {
+func getPriceMsg(price price.Price) string {
 	return fmt.Sprintf("22 Ayar Altin:\t\t\t%d\nCeyrek:\t\t\t%d\nYarim:\t\t\t%d\nTam:\t\t\t%d\nCumhuriyet:\t\t%d\n IAB Kapanis:\t%d",
 		price.Ayar22Altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.IabKapanis,
 	)

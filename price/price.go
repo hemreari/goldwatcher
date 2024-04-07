@@ -1,10 +1,12 @@
-package main
+package price
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/hemreari/goldwatcher/config"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,7 +34,40 @@ type Price struct {
 	IabKapanis  int
 }
 
-// InsertNewPrice inserts given price information to prices table.
+type DbClient struct {
+	Db *pgx.Conn
+}
+
+func NewDbClient(ctx context.Context, conf *config.Config) (*DbClient, error) {
+	dbConnUrl := getDbConnUrl(conf)
+	conn, err := pgx.Connect(ctx, dbConnUrl)
+	if err != nil {
+		log.Errorf("Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = conn.Ping(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't establish connection to db: %v", err)
+	}
+
+	log.Print("db connection is established.")
+
+	return &DbClient{Db: conn}, nil
+}
+
+func getDbConnUrl(conf *config.Config) string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
+		conf.Db.User, conf.Db.Password, conf.Db.Host, conf.Db.Port, conf.Db.DbName,
+	)
+}
+
+type PriceModel interface {
+	InsertNewPrice(ctx context.Context, price *Price)
+	GetLatestPrice(ctx context.Context, expirationMin int) *Price
+}
+
+// InsertPrice inserts given price information to prices table.
 func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	query := fmt.Sprintf("INSERT INTO prices (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		LastAtColName, Ayar22AltinColName, CeyrekColName, YarimColName, TamColName, CumhuriyetColName, IabKapanisColName)
@@ -46,7 +81,7 @@ func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	log.Printf("cmd status: %v", cmdTag)
 }
 
-// GetLatestPrice returns most recent price record according to threshold given
+// getLatestPrice returns most recent price record according to threshold given
 // in expirationMin param. If there is not any record in given threshold range
 // returns nil.
 // expirationMin is set in the config file.

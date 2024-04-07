@@ -1,15 +1,20 @@
-package main
+package scrapper
 
 import (
 	"strconv"
 	"strings"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/hemreari/goldwatcher/price"
 	log "github.com/sirupsen/logrus"
 )
 
-func GetPrices() *Price {
-	price := Price{}
+type ScrapperModel interface {
+	GetPrices() *price.Price
+}
+
+func GetPrices() *price.Price {
+	price := price.Price{}
 
 	c := colly.NewCollector()
 
