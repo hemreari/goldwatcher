@@ -11,21 +11,35 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type BotModel interface {
+	NewMessageReceived(update tgbotapi.Update) tgbotapi.MessageConfig
+	HandleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig
+}
+
 type TgClient struct {
 	Conf *config.Config
 	Bot  *tgbotapi.BotAPI
 	Pm   price.PriceModel
 }
 
-func NewTgClient(cfg *config.Config, pm price.PriceModel) *TgClient {
-	bot, err := tgbotapi.NewBotAPI(cfg.Tg.Token)
+func newBotClient(token string) (*tgbotapi.BotAPI, error) {
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
+	return bot, nil
+}
+
+func NewTgClient(cfg *config.Config, pm price.PriceModel) (*TgClient, error) {
+	bot, err := newBotClient(cfg.Tg.Token)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting tg client: %v", err)
+	}
+
 	bot.Debug = cfg.Tg.Debug
 	log.Printf("authorized on account %s", bot.Self.UserName)
 
-	return &TgClient{Bot: bot, Pm: pm, Conf: cfg}
+	return &TgClient{Bot: bot, Pm: pm, Conf: cfg}, nil
 }
 
 func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
@@ -49,17 +63,17 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 	case "status":
 		msg.Text = "I'm ok."
 	case "anlik":
-		msg = t.handleCurrentPricesCmd(update.Message.Chat.ID)
+		msg = t.HandleCurrentPricesCmd(update.Message.Chat.ID)
 	default:
 		msg.Text = "I don't know that command"
 	}
 
 	if _, err := t.Bot.Send(msg); err != nil {
-		log.Panic(err)
+		log.Errorf("couldn't send the message: %v", err)
 	}
 }
 
-func (t *TgClient) handleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
+func (t *TgClient) HandleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
 	ctx := context.Background()
 	msg := tgbotapi.NewMessage(chatId, "")
 

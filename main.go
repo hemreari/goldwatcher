@@ -12,16 +12,15 @@ import (
 	"github.com/hemreari/goldwatcher/bot"
 	"github.com/hemreari/goldwatcher/config"
 	"github.com/hemreari/goldwatcher/price"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
 func readConfig() (*config.Config, error) {
-	// cfg := &Config{}
-
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := godotenv.Load(".env")
+	if err != nil {
+		return nil, err
+	}
 
 	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
@@ -71,7 +70,10 @@ func main() {
 		log.Fatalf("couldn't create new db client: %v", err)
 	}
 
-	tgClient := bot.NewTgClient(cfg, dbClient)
+	tgClient, err := bot.NewTgClient(cfg, dbClient)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
