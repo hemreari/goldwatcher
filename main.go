@@ -12,15 +12,14 @@ import (
 	"github.com/hemreari/goldwatcher/bot"
 	"github.com/hemreari/goldwatcher/config"
 	"github.com/hemreari/goldwatcher/price"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
 func readConfig() (*config.Config, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		return nil, err
-	}
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {

@@ -1,0 +1,11 @@
+goldwatcher
+.env
+config.json
+temp-config.json
+docker-compose.yml
+.vscode/
+custom-postgresql.conf
+.dockerignore
+Dockerfile
+.git
+.gitignore
