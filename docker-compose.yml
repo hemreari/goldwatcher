@@ -18,7 +18,7 @@ services:
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
   goldwatcher_app:
     container_name: goldwatcher_app
-    image: goldwatcher:latest
+    image: hemreari/goldwatcher:latest
     depends_on:
       - db
     env_file:
