@@ -1,7 +1,7 @@
 name: "gold-watcher"
 version: "3.7"
 services:
-  postgres:
+  db:
     container_name: "goldwatcher-db"
     image: "postgres:16.2-alpine3.19"
     expose:
@@ -14,3 +14,11 @@ services:
     environment:
       - POSTGRES_PASSWORD=asdqwe1234
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
+  goldwatcher:
+    container_name: "goldwatcher"
+    image: "goldwatcher:latest"
+    depends_on:
+      - db
+    env_file:
+      - path: ./.env
+        required: true
