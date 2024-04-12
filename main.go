@@ -5,62 +5,19 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hemreari/goldwatcher/bot"
 	"github.com/hemreari/goldwatcher/config"
 	"github.com/hemreari/goldwatcher/price"
+	"github.com/hemreari/goldwatcher/scrapper"
 	log "github.com/sirupsen/logrus"
 )
 
-func readConfig() (*config.Config, error) {
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
-	if err != nil {
-		return nil, fmt.Errorf("couldn't convert the DB_PORT env variable to int: %v", err)
-	}
-
-	tgDebug, err := strconv.ParseBool(os.Getenv("TG_DEBUG"))
-	if err != nil {
-		log.Errorf("couldn't convert the TG_DEBUG env variable to bool: %v", err)
-		tgDebug = false
-	}
-
-	expMin, err := strconv.Atoi(os.Getenv("PRICE_EXPIRATION_MIN"))
-	if err != nil {
-		log.Errorf("couldn't convert the PRICE_EXPIRATION_MIN env variable to int: %v", err)
-		expMin = 5
-	}
-
-	cfg := &config.Config{
-		Db: config.DbConf{
-			Host:     os.Getenv("DB_HOST"),
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			DbName:   os.Getenv("DB_NAME"),
-			Port:     port,
-		},
-		Tg: config.TgConf{
-			Token: os.Getenv("TG_TOKEN"),
-			Debug: tgDebug,
-		},
-		App: config.AppConf{
-			ExpirationMin: expMin,
-		},
-	}
-
-	return cfg, nil
-}
-
 func main() {
 	ctx := context.Background()
-	cfg, err := readConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		log.Fatalf("couldn't read the env variables: %v", err)
 	}
@@ -69,7 +26,11 @@ func main() {
 		log.Fatalf("couldn't create new db client: %v", err)
 	}
 
-	tgClient, err := bot.NewTgClient(cfg, dbClient)
+	scrapperClient := scrapper.NewScrapperClient()
+
+	botclientStruct := bot.NewBotClientStruct()
+
+	tgClient, err := bot.NewTgClient(botclientStruct, dbClient, scrapperClient, cfg)
 	if err != nil {
 		log.Panic(err)
 	}

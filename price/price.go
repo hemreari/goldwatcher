@@ -67,10 +67,15 @@ type PriceModel interface {
 	GetLatestPrice(ctx context.Context, expirationMin int) *Price
 }
 
+// getInsertNewPriceSQL returns SQL that inserts to the prices table.
+func getInsertNewPriceSQL() string {
+	return fmt.Sprintf("INSERT INTO prices (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		LastAtColName, Ayar22AltinColName, CeyrekColName, YarimColName, TamColName, CumhuriyetColName, IabKapanisColName)
+}
+
 // InsertPrice inserts given price information to prices table.
 func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
-	query := fmt.Sprintf("INSERT INTO prices (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-		LastAtColName, Ayar22AltinColName, CeyrekColName, YarimColName, TamColName, CumhuriyetColName, IabKapanisColName)
+	query := getInsertNewPriceSQL()
 
 	cmdTag, err := d.Db.Exec(ctx,
 		query, time.Now(), price.Ayar22Altin, price.Ceyrek, price.Yarim, price.Tam, price.Cumhuriyet, price.IabKapanis)
@@ -81,6 +86,12 @@ func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 	log.Printf("cmd status: %v", cmdTag)
 }
 
+// getLatestPriceSQL returns SQL that selects from the price table where last_at
+// bigger than the arg and orders by last in descending order.
+func getLatestPriceSQL() string {
+	return "SELECT * FROM prices WHERE last_at > $1 ORDER BY last_at DESC"
+}
+
 // getLatestPrice returns most recent price record according to threshold given
 // in expirationMin param. If there is not any record in given threshold range
 // returns nil.
@@ -88,8 +99,7 @@ func (d *DbClient) InsertNewPrice(ctx context.Context, price *Price) {
 func (d *DbClient) GetLatestPrice(ctx context.Context, expirationMin int) *Price {
 	now := time.Now()
 	then := now.Add(time.Duration(-expirationMin) * time.Minute)
-	log.Printf("then: %v", then)
-	query := "SELECT * FROM prices WHERE last_at > $1 ORDER BY last_at DESC"
+	query := getLatestPriceSQL()
 
 	var err error
 	rows, err := d.Db.Query(ctx, query, then)

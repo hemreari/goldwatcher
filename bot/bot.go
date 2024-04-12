@@ -14,15 +14,28 @@ import (
 type BotModel interface {
 	NewMessageReceived(update tgbotapi.Update) tgbotapi.MessageConfig
 	HandleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig
+	GetPrices(ctx context.Context) *price.Price
 }
 
 type TgClient struct {
-	Conf *config.Config
-	Bot  *tgbotapi.BotAPI
-	Pm   price.PriceModel
+	Conf          *config.Config
+	Bot           *tgbotapi.BotAPI
+	PriceModel    price.PriceModel
+	ScrapperModel scrapper.ScrapperModel
 }
 
-func newBotClient(token string) (*tgbotapi.BotAPI, error) {
+type BotClientModel interface {
+	newBotClient(token string) (*tgbotapi.BotAPI, error)
+}
+
+type BotClientStruct struct {
+}
+
+func NewBotClientStruct() *BotClientStruct {
+	return &BotClientStruct{}
+}
+
+func (bc *BotClientStruct) newBotClient(token string) (*tgbotapi.BotAPI, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
@@ -30,8 +43,8 @@ func newBotClient(token string) (*tgbotapi.BotAPI, error) {
 	return bot, nil
 }
 
-func NewTgClient(cfg *config.Config, pm price.PriceModel) (*TgClient, error) {
-	bot, err := newBotClient(cfg.Tg.Token)
+func NewTgClient(botClientModel BotClientModel, pm price.PriceModel, sm scrapper.ScrapperModel, cfg *config.Config) (*TgClient, error) {
+	bot, err := botClientModel.newBotClient(cfg.Tg.Token)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting tg client: %v", err)
 	}
@@ -39,7 +52,7 @@ func NewTgClient(cfg *config.Config, pm price.PriceModel) (*TgClient, error) {
 	bot.Debug = cfg.Tg.Debug
 	log.Printf("authorized on account %s", bot.Self.UserName)
 
-	return &TgClient{Bot: bot, Pm: pm, Conf: cfg}, nil
+	return &TgClient{Bot: bot, PriceModel: pm, ScrapperModel: sm, Conf: cfg}, nil
 }
 
 func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
@@ -73,15 +86,29 @@ func (t *TgClient) NewMessageReceived(update tgbotapi.Update) {
 	}
 }
 
+// GetPrices gets latest price values from DB and returns a price struct.
+// If price values in the DB are older than the expiration min value in the
+// config then scraps new price values and inserts them to the DB. After that
+// new price values are returned.
+func (t *TgClient) GetPrices(ctx context.Context) *price.Price {
+	pri := t.PriceModel.GetLatestPrice(ctx, t.Conf.App.ExpirationMin)
+	if pri == nil {
+		pri = t.ScrapperModel.GetPrices()
+		t.PriceModel.InsertNewPrice(ctx, pri)
+	}
+	return pri
+}
+
+// HandleCurrentPricesCmd returns a botapi.MessageConfig entity that contains latest
+// price information on the Text field.
 func (t *TgClient) HandleCurrentPricesCmd(chatId int64) tgbotapi.MessageConfig {
 	ctx := context.Background()
 	msg := tgbotapi.NewMessage(chatId, "")
 
-	var pri *price.Price
-	pri = t.Pm.GetLatestPrice(ctx, t.Conf.App.ExpirationMin)
+	pri := t.GetPrices(ctx)
 	if pri == nil {
-		pri = scrapper.GetPrices()
-		t.Pm.InsertNewPrice(ctx, pri)
+		msg.Text = "Couldn't get the latest prices."
+		return msg
 	}
 
 	msg.Text = getPriceMsg(*pri)

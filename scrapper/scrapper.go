@@ -13,7 +13,14 @@ type ScrapperModel interface {
 	GetPrices() *price.Price
 }
 
-func GetPrices() *price.Price {
+type ScrapperClient struct {
+}
+
+func NewScrapperClient() *ScrapperClient {
+	return &ScrapperClient{}
+}
+
+func (sc *ScrapperClient) GetPrices() *price.Price {
 	price := price.Price{}
 
 	c := colly.NewCollector()
