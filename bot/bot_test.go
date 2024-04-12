@@ -31,7 +31,6 @@ func (m *MockPriceModel) GetLatestPrice(_ context.Context, expirationMin int) *p
 }
 
 type MockBotModel struct {
-	mockPriceModel *MockPriceModel
 }
 
 func (m *MockBotModel) newBotClient(_ string) (*tgbotapi.BotAPI, error) {

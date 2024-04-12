@@ -57,7 +57,12 @@ func (sc *ScrapperClient) GetPrices() *price.Price {
 		log.Println("Visiting", r.URL)
 	})
 
-	c.Visit("http://akod.org.tr")
+	url := "http://akod.org.tr"
+
+	err := c.Visit(url)
+	if err != nil {
+		log.Errorf("error while visiting %s: %v", url, err)
+	}
 
 	return &price
 }
