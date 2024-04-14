@@ -21,4 +21,4 @@
 go.work
 goldwatcher
 config.json
-.env
+access_token.txt

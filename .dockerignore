@@ -9,3 +9,4 @@ custom-postgresql.conf
 Dockerfile
 .git
 .gitignore
+access_token.txt
