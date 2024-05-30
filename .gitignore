@@ -22,3 +22,9 @@ go.work
 goldwatcher
 config.json
 access_token.txt
+prediction/bin/
+prediction/__pycache__
+prediction/include
+prediction/lib
+prediction/share
+prediction/pyvenv.cfg
