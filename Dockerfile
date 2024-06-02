@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 golang:1.22.2-alpine3.19
+FROM golang:1.22.2-alpine3.19
 WORKDIR /app
 COPY go.* ./
 COPY *.go ./

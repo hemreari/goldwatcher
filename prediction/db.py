@@ -35,8 +35,52 @@ def get_daily_avg_ceyrek(db_engine):
             func.date_trunc('day', Prices.last_at)
         ).all()
     except SQLAlchemyError as e:
-        print(f"error while getting all the prices: {e}")
+        print(f"error while getting average ceyrek price: {e}")
     finally:
         session.close()
         return daily_avg_ceyrek
 
+def get_daily_avg_yarim(db_engine):
+    try:
+        Session = sessionmaker(bind=db_engine)
+        session = Session()
+        daily_avg_yarim = session.query(
+            func.date_trunc('day', Prices.last_at).label('day'),
+            func.avg(Prices.yarim).label('average_yarim')).group_by(
+            func.date_trunc('day', Prices.last_at)
+        ).all()
+    except SQLAlchemyError as e:
+        print(f"error while getting average yarim prices: {e}")
+    finally:
+        session.close()
+        return daily_avg_yarim
+
+def get_daily_avg_tam(db_engine):
+    try:
+        Session = sessionmaker(bind=db_engine)
+        session = Session()
+        daily_avg_tam = session.query(
+            func.date_trunc('day', Prices.last_at).label('day'),
+            func.avg(Prices.tam).label('average_tam')).group_by(
+            func.date_trunc('day', Prices.last_at)
+        ).all()
+    except SQLAlchemyError as e:
+        print(f"error while getting all the prices: {e}")
+    finally:
+        session.close()
+        return daily_avg_tam
+
+def get_daily_avg_cumhuriyet(db_engine):
+    try:
+        Session = sessionmaker(bind=db_engine)
+        session = Session()
+        daily_avg_tam = session.query(
+            func.date_trunc('day', Prices.last_at).label('day'),
+            func.avg(Prices.cumhuriyet).label('average_cumhuriyet')).group_by(
+            func.date_trunc('day', Prices.last_at)
+        ).all()
+    except SQLAlchemyError as e:
+        print(f"error while getting all cumhuriyet prices: {e}")
+    finally:
+        session.close()
+        return daily_avg_tam
