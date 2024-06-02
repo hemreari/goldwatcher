@@ -26,7 +26,8 @@ compose-file uses default Postgresql configuration values. I strongly advise you
 
 ### Prediction
 
-There is a prediction module written in Python. You can get a prediction for all entities for next 30 days. The prediction module uses Facebook's [Prophet](https://facebook.github.io/prophet/) library. To run the predictions follow this steps:
+There is a prediction module written in Python. You can get a prediction for all entities for next 30 days. The prediction module uses Facebook's [Prophet](https://facebook.github.io/prophet/) library. <br>
+To run the predictions follow this steps:
 
 - `sh cd prediction`
 - `sh pip install -r requirements.txt`
